@@ -140,7 +140,10 @@ def create_app(
             raise HTTPException(status_code=502, detail="Inference upstream unavailable.") from exc
         finally:
             metrics.request_latency.labels(route="models").observe(time.perf_counter() - started)
-        metrics.requests.labels(route="models", status_class=_status_class(response.status_code)).inc()
+        metrics.requests.labels(
+            route="models",
+            status_class=_status_class(response.status_code),
+        ).inc()
         return response
 
     @app.post("/v1/chat/completions")
