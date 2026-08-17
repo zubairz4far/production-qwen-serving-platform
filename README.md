@@ -17,7 +17,13 @@ V0.2 adds the measurement layer needed before claiming production serving perfor
 - reproducibility capture for GPU, driver, VRAM, Git commit, Docker Compose, vLLM image ID, and loaded model aliases
 - one-command measured GPU suite that writes reviewable JSON artifacts
 
-No GPU throughput or latency number is claimed until that suite has actually run on named hardware.
+### Verified V0.2 control-plane status
+
+GitHub Actions run `32019414154` on commit `97666d95e0731ec81bf5f52287278829816ce89e` passed clean installation, Ruff, **22/22 tests**, validation of all **24** served-tool evaluation cases, the deterministic SLO regression, the gateway Docker build, and Docker Compose validation.
+
+The machine-readable evidence is committed at `evals/baselines/control_plane_v0.2.json`. This baseline proves the evaluation and serving machinery; it deliberately does **not** report a live GPU accuracy, throughput, or latency score.
+
+No GPU throughput or latency number is claimed until the measured suite has actually run on named hardware.
 
 ## Architecture
 
