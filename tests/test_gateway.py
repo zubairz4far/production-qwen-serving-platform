@@ -118,14 +118,16 @@ def test_streaming_sse_is_proxied() -> None:
             stream=StaticAsyncStream(),
         )
 
-    with TestClient(create_app(settings(), transport=httpx.MockTransport(handler))) as client:
-        with client.stream(
+    with (
+        TestClient(create_app(settings(), transport=httpx.MockTransport(handler))) as client,
+        client.stream(
             "POST",
             "/v1/chat/completions",
             headers={"authorization": "Bearer public-a", "x-request-id": "req-123"},
             json={"model": "tool-calling", "messages": [], "stream": True},
-        ) as response:
-            content = b"".join(response.iter_bytes())
+        ) as response,
+    ):
+        content = b"".join(response.iter_bytes())
     assert response.status_code == 200
     assert response.headers["x-request-id"] == "req-123"
     assert b"[DONE]" in content
