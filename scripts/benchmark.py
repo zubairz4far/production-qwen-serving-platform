@@ -65,12 +65,18 @@ async def one_request(
 
 async def run(args: argparse.Namespace) -> dict[str, Any]:
     headers = {"authorization": f"Bearer {args.api_key}"}
-    limits = httpx.Limits(max_connections=args.concurrency, max_keepalive_connections=args.concurrency)
+    limits = httpx.Limits(
+        max_connections=args.concurrency,
+        max_keepalive_connections=args.concurrency,
+    )
     timeout = httpx.Timeout(args.timeout)
     semaphore = asyncio.Semaphore(args.concurrency)
     wall_started = time.perf_counter()
     async with httpx.AsyncClient(
-        base_url=args.base_url.rstrip("/"), headers=headers, limits=limits, timeout=timeout
+        base_url=args.base_url.rstrip("/"),
+        headers=headers,
+        limits=limits,
+        timeout=timeout,
     ) as client:
         results = await asyncio.gather(
             *[
@@ -115,7 +121,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--concurrency", type=int, default=4)
     parser.add_argument("--max-tokens", type=int, default=64)
     parser.add_argument("--timeout", type=float, default=120.0)
-    parser.add_argument("--prompt", default="Reply with one short sentence about reliable model serving.")
+    parser.add_argument(
+        "--prompt",
+        default="Reply with one short sentence about reliable model serving.",
+    )
     parser.add_argument("--output", default="evals/results/latest_benchmark.json")
     return parser.parse_args()
 
