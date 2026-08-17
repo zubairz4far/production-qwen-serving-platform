@@ -24,6 +24,8 @@ jobs:
         run: ruff check .
       - name: Tests
         run: pytest -q
+      - name: Validate tool-evaluation assets
+        run: python -m scripts.validate_eval_assets
       - name: SLO evaluator regression
         run: python -m scripts.evaluate_slo --result evals/fixtures/ci_benchmark_result.json
       - name: Build gateway image
