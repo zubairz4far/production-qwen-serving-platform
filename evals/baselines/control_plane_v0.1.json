@@ -1,0 +1,34 @@
+{
+  "version": "0.1.0",
+  "measured_at": "2026-08-17",
+  "source": {
+    "github_actions_run_id": 32017754771,
+    "commit_sha": "55af3b50eac613e441d3eb5d9149251cff3aed15"
+  },
+  "ci": {
+    "install": "passed",
+    "ruff": "passed",
+    "tests_passed": 11,
+    "tests_failed": 0,
+    "slo_evaluator_regression": "passed",
+    "gateway_docker_build": "passed",
+    "docker_compose_config": "passed"
+  },
+  "validated_control_plane_behavior": [
+    "public API authentication boundary",
+    "caller bearer token is never forwarded to vLLM",
+    "model allowlist enforcement",
+    "readiness requires configured LoRA alias",
+    "SSE streaming proxy behavior",
+    "low-cardinality gateway metrics",
+    "bounded request-body rejection before proxying",
+    "configuration normalization",
+    "SLO evaluator failure reporting"
+  ],
+  "limitations": [
+    "No GPU inference throughput or latency is claimed by this baseline.",
+    "The vLLM GPU runtime was not started in GitHub Actions.",
+    "The SLO fixture is deterministic regression data, not a hardware benchmark.",
+    "Real tool-call correctness must be measured against the served LoRA on a GPU host."
+  ]
+}
