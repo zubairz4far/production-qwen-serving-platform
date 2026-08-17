@@ -20,6 +20,28 @@ def percentile(values: list[float], q: float) -> float:
     return ordered[index]
 
 
+def distribution(values: list[float]) -> dict[str, float]:
+    return {
+        "mean": statistics.fmean(values) if values else 0.0,
+        "p50": percentile(values, 0.50),
+        "p95": percentile(values, 0.95),
+        "p99": percentile(values, 0.99),
+    }
+
+
+def parse_sse_data(line: str) -> dict[str, Any] | None:
+    if not line.startswith("data:"):
+        return None
+    data = line[5:].strip()
+    if not data or data == "[DONE]":
+        return None
+    try:
+        payload = json.loads(data)
+    except json.JSONDecodeError:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
 async def one_request(
     client: httpx.AsyncClient,
     semaphore: asyncio.Semaphore,
@@ -29,10 +51,12 @@ async def one_request(
 ) -> dict[str, Any]:
     async with semaphore:
         started = time.perf_counter()
-        ttft_ms: float | None = None
+        client_ttft_ms: float | None = None
         output_bytes = 0
         status_code = 0
         error: str | None = None
+        usage: dict[str, Any] = {}
+        engine_metrics: dict[str, Any] = {}
         try:
             async with client.stream(
                 "POST",
@@ -43,24 +67,52 @@ async def one_request(
                     "max_tokens": max_tokens,
                     "temperature": 0,
                     "stream": True,
+                    "stream_options": {"include_usage": True},
+                    "chat_template_kwargs": {"enable_thinking": False},
                 },
             ) as response:
                 status_code = response.status_code
-                async for chunk in response.aiter_bytes():
-                    if chunk and ttft_ms is None:
-                        ttft_ms = (time.perf_counter() - started) * 1000
-                    output_bytes += len(chunk)
+                async for line in response.aiter_lines():
+                    if not line:
+                        continue
+                    output_bytes += len(line.encode("utf-8"))
+                    payload = parse_sse_data(line)
+                    if payload is None:
+                        continue
+                    if client_ttft_ms is None and payload.get("choices"):
+                        client_ttft_ms = (time.perf_counter() - started) * 1000
+                    if isinstance(payload.get("usage"), dict):
+                        usage = payload["usage"]
+                    if isinstance(payload.get("metrics"), dict):
+                        engine_metrics = payload["metrics"]
         except httpx.HTTPError as exc:
             error = type(exc).__name__
+
         total_ms = (time.perf_counter() - started) * 1000
         return {
             "status_code": status_code,
             "ok": 200 <= status_code < 300 and error is None,
-            "ttft_ms": ttft_ms,
+            "client_ttft_ms": client_ttft_ms,
             "total_latency_ms": total_ms,
             "output_bytes": output_bytes,
+            "prompt_tokens": usage.get("prompt_tokens"),
+            "completion_tokens": usage.get("completion_tokens"),
+            "engine_ttft_ms": engine_metrics.get("time_to_first_token_ms"),
+            "engine_queue_time_ms": engine_metrics.get("queue_time_ms"),
+            "engine_mean_itl_ms": engine_metrics.get("mean_itl_ms"),
+            "engine_tokens_per_second": engine_metrics.get("tokens_per_second"),
+            "server_metrics_available": bool(engine_metrics),
             "error": error,
         }
+
+
+def numeric_values(rows: list[dict[str, Any]], key: str) -> list[float]:
+    values: list[float] = []
+    for row in rows:
+        value = row.get(key)
+        if isinstance(value, int | float) and not isinstance(value, bool):
+            values.append(float(value))
+    return values
 
 
 async def run(args: argparse.Namespace) -> dict[str, Any]:
@@ -84,10 +136,18 @@ async def run(args: argparse.Namespace) -> dict[str, Any]:
                 for _ in range(args.requests)
             ]
         )
+
     wall_seconds = time.perf_counter() - wall_started
     successful = [item for item in results if item["ok"]]
-    totals = [item["total_latency_ms"] for item in successful]
-    ttfts = [item["ttft_ms"] for item in successful if item["ttft_ms"] is not None]
+    totals = numeric_values(successful, "total_latency_ms")
+    client_ttfts = numeric_values(successful, "client_ttft_ms")
+    engine_ttfts = numeric_values(successful, "engine_ttft_ms")
+    queue_times = numeric_values(successful, "engine_queue_time_ms")
+    itls = numeric_values(successful, "engine_mean_itl_ms")
+    engine_tps = numeric_values(successful, "engine_tokens_per_second")
+    completion_tokens = numeric_values(successful, "completion_tokens")
+    total_completion_tokens = int(sum(completion_tokens))
+
     return {
         "requests": args.requests,
         "concurrency": args.concurrency,
@@ -96,18 +156,17 @@ async def run(args: argparse.Namespace) -> dict[str, Any]:
         "success_rate": len(successful) / args.requests if args.requests else 0.0,
         "wall_seconds": wall_seconds,
         "throughput_requests_per_second": len(successful) / wall_seconds if wall_seconds else 0.0,
-        "latency_ms": {
-            "mean": statistics.fmean(totals) if totals else 0.0,
-            "p50": percentile(totals, 0.50),
-            "p95": percentile(totals, 0.95),
-            "p99": percentile(totals, 0.99),
-        },
-        "ttft_ms": {
-            "mean": statistics.fmean(ttfts) if ttfts else 0.0,
-            "p50": percentile(ttfts, 0.50),
-            "p95": percentile(ttfts, 0.95),
-            "p99": percentile(ttfts, 0.99),
-        },
+        "throughput_output_tokens_per_second": (
+            total_completion_tokens / wall_seconds if wall_seconds else 0.0
+        ),
+        "completion_tokens": total_completion_tokens,
+        "latency_ms": distribution(totals),
+        "ttft_ms": distribution(client_ttfts),
+        "engine_ttft_ms": distribution(engine_ttfts),
+        "engine_queue_time_ms": distribution(queue_times),
+        "engine_mean_itl_ms": distribution(itls),
+        "engine_tokens_per_second": distribution(engine_tps),
+        "server_metrics_coverage": len(engine_ttfts) / len(successful) if successful else 0.0,
         "failures": [item for item in results if not item["ok"]][:20],
     }
 
