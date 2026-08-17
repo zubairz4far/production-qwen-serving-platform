@@ -4,6 +4,12 @@ A production-shaped inference platform for serving **Qwen3** and the evaluated L
 
 The goal is not to wrap a model in one endpoint. The project separates the GPU inference runtime from an independently testable edge/control layer so reliability, security, backpressure, observability, and SLO evaluation can be validated without requiring a GPU in CI.
 
+## Verified V0.1 status
+
+GitHub Actions run `32017754771` on commit `55af3b50eac613e441d3eb5d9149251cff3aed15` passed clean installation, Ruff, **11/11 tests**, the deterministic SLO evaluator regression, the gateway Docker build, and Docker Compose configuration validation.
+
+The durable control-plane evidence is committed at `evals/baselines/control_plane_v0.1.json`. These results validate the serving gateway and deployment configuration; they deliberately do **not** claim GPU inference throughput, latency, or live tool-call accuracy.
+
 ## V0.1 architecture
 
 ```text
