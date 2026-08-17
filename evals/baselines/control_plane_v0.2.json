@@ -1,0 +1,48 @@
+{
+  "release": "0.2.0",
+  "measured_at": "2026-08-17",
+  "source": {
+    "github_actions_run_id": 32019414154,
+    "commit_sha": "97666d95e0731ec81bf5f52287278829816ce89e",
+    "branch": "main"
+  },
+  "ci": {
+    "clean_install": "passed",
+    "ruff": "passed",
+    "tests_passed": 22,
+    "tests_failed": 0,
+    "slo_regression": "passed",
+    "gateway_docker_build": "passed",
+    "compose_validation": "passed"
+  },
+  "served_tool_evaluation_assets": {
+    "cases": 24,
+    "tools": ["cancel_order", "get_order", "get_weather"],
+    "categories": {
+      "tool_required": 9,
+      "missing_order_id": 4,
+      "missing_city": 2,
+      "no_tool": 3,
+      "hard_negative": 4,
+      "prompt_injection": 2
+    },
+    "asset_validation": "passed",
+    "live_model_evaluation_executed": false
+  },
+  "v0_2_capabilities": [
+    "strict served OpenAI-compatible tool-call evaluation over /v1/chat/completions",
+    "exact tool-name and argument scoring",
+    "clarification-restraint and hallucinated-tool metrics",
+    "client-observed and vLLM engine-side TTFT collection",
+    "vLLM queue-time, mean-ITL, and per-request token-throughput collection",
+    "SLO-aware concurrency sweep with best passing point selection",
+    "GPU, driver, VRAM, Git, Docker, vLLM image, and loaded-model runtime capture",
+    "one-command GPU correctness and performance suite"
+  ],
+  "limitations": [
+    "No live NVIDIA GPU inference benchmark was executed for this committed control-plane baseline.",
+    "The 24 evaluation cases are validated test assets, not a claimed served-model accuracy score.",
+    "Hugging Face Jobs were not launched because GPU Jobs are paid compute and no charge was implicitly authorized.",
+    "Admission control is per gateway process; multi-replica global admission requires a shared layer."
+  ]
+}
