@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 
-
 VALID_BEHAVIORS = {"tool", "clarify", "no_tool"}
 
 
