@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  control-plane:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Lint
+        run: ruff check .
+      - name: Tests
+        run: pytest -q
+      - name: SLO evaluator regression
+        run: python -m scripts.evaluate_slo --result evals/fixtures/ci_benchmark_result.json
+      - name: Build gateway image
+        run: docker build -f Dockerfile.gateway -t production-qwen-gateway:ci .
+      - name: Validate Compose
+        run: docker compose config >/dev/null

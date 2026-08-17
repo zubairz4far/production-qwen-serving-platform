@@ -1,0 +1,71 @@
+services:
+  vllm:
+    image: vllm/vllm-openai:v0.26.0
+    ipc: host
+    gpus: all
+    environment:
+      HF_TOKEN: ${HF_TOKEN:-}
+    command:
+      - --model
+      - ${BASE_MODEL_ID:-Qwen/Qwen3-1.7B}
+      - --served-model-name
+      - base
+      - --api-key
+      - ${VLLM_API_KEY:-change-me-upstream}
+      - --enable-lora
+      - --lora-modules
+      - ${LORA_MODEL_ALIAS:-tool-calling}=${LORA_REPO:-zubairz4far/qwen3-1.7b-tool-calling}
+      - --max-lora-rank
+      - ${MAX_LORA_RANK:-64}
+      - --enable-auto-tool-choice
+      - --tool-call-parser
+      - hermes
+      - --reasoning-parser
+      - qwen3
+      - --disable-access-log-for-endpoints
+      - /health,/metrics
+      - --max-model-len
+      - ${MAX_MODEL_LEN:-8192}
+      - --gpu-memory-utilization
+      - ${GPU_MEMORY_UTILIZATION:-0.90}
+    volumes:
+      - hf-cache:/root/.cache/huggingface
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.gateway
+    environment:
+      UPSTREAM_BASE_URL: http://vllm:8000
+      UPSTREAM_API_KEY: ${VLLM_API_KEY:-change-me-upstream}
+      PUBLIC_API_KEYS: ${PUBLIC_API_KEYS:-change-me-public}
+      ALLOWED_MODELS: ${LORA_MODEL_ALIAS:-tool-calling},base
+      READINESS_MODEL: ${LORA_MODEL_ALIAS:-tool-calling}
+      MAX_CONCURRENCY: ${MAX_CONCURRENCY:-8}
+      QUEUE_TIMEOUT_SECONDS: ${QUEUE_TIMEOUT_SECONDS:-0.25}
+      UPSTREAM_TIMEOUT_SECONDS: ${UPSTREAM_TIMEOUT_SECONDS:-120}
+      MAX_REQUEST_BYTES: ${MAX_REQUEST_BYTES:-1000000}
+    depends_on:
+      vllm:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - gateway
+    ports:
+      - "127.0.0.1:9090:9090"
+
+volumes:
+  hf-cache:

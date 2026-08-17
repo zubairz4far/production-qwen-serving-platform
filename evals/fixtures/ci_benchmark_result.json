@@ -1,0 +1,12 @@
+{
+  "requests": 20,
+  "concurrency": 4,
+  "successful_requests": 20,
+  "failed_requests": 0,
+  "success_rate": 1.0,
+  "wall_seconds": 5.0,
+  "throughput_requests_per_second": 4.0,
+  "latency_ms": {"mean": 800.0, "p50": 750.0, "p95": 1200.0, "p99": 1300.0},
+  "ttft_ms": {"mean": 180.0, "p50": 170.0, "p95": 300.0, "p99": 330.0},
+  "failures": []
+}

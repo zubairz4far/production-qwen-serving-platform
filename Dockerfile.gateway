@@ -1,0 +1,14 @@
+FROM python:3.11-slim@sha256:9c900dea9e8fb7e16277c179b555cc72d29a352dbc33cff48ad5a0412fd5bfc7
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+RUN addgroup --system app && adduser --system --ingroup app app
+COPY pyproject.toml ./
+COPY gateway ./gateway
+RUN pip install --no-cache-dir . && chown -R app:app /app
+USER app
+EXPOSE 8080
+CMD ["uvicorn", "gateway.main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1", "--no-server-header", "--no-access-log"]
