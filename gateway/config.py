@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     queue_timeout_seconds: float = 0.25
     upstream_timeout_seconds: float = 120.0
     max_request_bytes: int = 1_000_000
+    tool_policy_enabled: bool = True
+    tool_policy_models: str = "tool-calling"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -26,6 +28,10 @@ class Settings(BaseSettings):
     @property
     def allowed_model_set(self) -> frozenset[str]:
         return frozenset(item.strip() for item in self.allowed_models.split(",") if item.strip())
+
+    @property
+    def tool_policy_model_set(self) -> frozenset[str]:
+        return frozenset(item.strip() for item in self.tool_policy_models.split(",") if item.strip())
 
 
 @lru_cache
