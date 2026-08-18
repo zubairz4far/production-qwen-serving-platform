@@ -1,6 +1,6 @@
 [project]
 name = "production-qwen-serving-platform"
-version = "0.2.0"
+version = "0.3.0"
 description = "Production-style serving platform for Qwen3 and LoRA adapters on vLLM."
 requires-python = ">=3.11"
 dependencies = [
