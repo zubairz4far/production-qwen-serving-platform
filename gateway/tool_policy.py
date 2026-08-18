@@ -226,7 +226,10 @@ def _replace_latest_user_text(body: dict[str, Any], content: str) -> dict[str, A
     if not isinstance(messages, list):
         return body
 
-    rewritten_messages = [dict(message) if isinstance(message, dict) else message for message in messages]
+    rewritten_messages = [
+        dict(message) if isinstance(message, dict) else message
+        for message in messages
+    ]
     for index in range(len(rewritten_messages) - 1, -1, -1):
         message = rewritten_messages[index]
         if not isinstance(message, dict) or message.get("role") != "user":
