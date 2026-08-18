@@ -31,7 +31,9 @@ class Settings(BaseSettings):
 
     @property
     def tool_policy_model_set(self) -> frozenset[str]:
-        return frozenset(item.strip() for item in self.tool_policy_models.split(",") if item.strip())
+        return frozenset(
+            item.strip() for item in self.tool_policy_models.split(",") if item.strip()
+        )
 
 
 @lru_cache
