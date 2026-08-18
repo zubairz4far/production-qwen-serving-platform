@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import json
 import time
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from uuid import uuid4
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request, status
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 
 from gateway.auth import require_api_key
 from gateway.config import Settings, get_settings
@@ -18,6 +19,7 @@ from gateway.proxy import (
     UpstreamUnavailableError,
     queue_timeout_http_error,
 )
+from gateway.tool_policy import apply_tool_policy
 
 
 def _request_id(request: Request) -> str:
@@ -53,6 +55,83 @@ async def _read_bounded_body(request: Request, limit: int) -> bytes:
     return b"".join(chunks)
 
 
+def _clarification_payload(
+    *,
+    model: str,
+    request_id: str,
+    content: str,
+) -> dict:
+    return {
+        "id": f"chatcmpl-{request_id}",
+        "object": "chat.completion",
+        "created": int(time.time()),
+        "model": model,
+        "choices": [
+            {
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": content,
+                },
+                "finish_reason": "stop",
+            }
+        ],
+    }
+
+
+def _clarification_response(
+    *,
+    model: str,
+    request_id: str,
+    content: str,
+    stream: bool,
+) -> Response:
+    if not stream:
+        return JSONResponse(
+            content=_clarification_payload(
+                model=model,
+                request_id=request_id,
+                content=content,
+            )
+        )
+
+    created = int(time.time())
+    chunk_id = f"chatcmpl-{request_id}"
+    first = {
+        "id": chunk_id,
+        "object": "chat.completion.chunk",
+        "created": created,
+        "model": model,
+        "choices": [
+            {
+                "index": 0,
+                "delta": {"role": "assistant", "content": content},
+                "finish_reason": None,
+            }
+        ],
+    }
+    final = {
+        "id": chunk_id,
+        "object": "chat.completion.chunk",
+        "created": created,
+        "model": model,
+        "choices": [
+            {
+                "index": 0,
+                "delta": {},
+                "finish_reason": "stop",
+            }
+        ],
+    }
+
+    async def iterator() -> AsyncIterator[bytes]:
+        yield f"data: {json.dumps(first, separators=(',', ':'))}\n\n".encode()
+        yield f"data: {json.dumps(final, separators=(',', ':'))}\n\n".encode()
+        yield b"data: [DONE]\n\n"
+
+    return StreamingResponse(iterator(), media_type="text/event-stream")
+
+
 def create_app(
     settings: Settings | None = None,
     *,
@@ -74,10 +153,10 @@ def create_app(
 
     app = FastAPI(
         title=resolved.app_name,
-        version="0.2.0",
+        version="0.3.0",
         description=(
             "Authenticated, backpressure-aware OpenAI-compatible edge gateway for a vLLM-backed "
-            "Qwen serving deployment."
+            "Qwen serving deployment with deterministic tool-use policy enforcement."
         ),
         lifespan=lifespan,
     )
@@ -164,6 +243,23 @@ def create_app(
         stream = body.get("stream") is True
         proxy: UpstreamProxy = request.app.state.proxy
         request_id = request.state.request_id
+
+        if resolved.tool_policy_enabled and model in resolved.tool_policy_model_set:
+            policy = apply_tool_policy(body)
+            body = policy.body
+            if policy.action == "clarify" and policy.clarification:
+                response = _clarification_response(
+                    model=model,
+                    request_id=request_id,
+                    content=policy.clarification,
+                    stream=stream,
+                )
+                metrics.requests.labels(
+                    route="chat_completions",
+                    status_class="2xx",
+                ).inc()
+                return response
+
         started = time.perf_counter()
         try:
             response = await proxy.post_json(
