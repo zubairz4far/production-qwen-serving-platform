@@ -40,6 +40,18 @@ _NON_EXECUTION_RE = re.compile(
     re.IGNORECASE,
 )
 
+_TOOL_CONTROL_ATTACK_PATTERNS = [
+    r"\bignore (?:all |the )?(?:available )?(?:tool|tools|schema|schemas)\b",
+    r"\bdisregard (?:all |the )?(?:available )?(?:tool|tools|schema|schemas)\b",
+    r"\b(?:malicious|hostile|injected|fake) (?:note|text|instruction)\b",
+    r"\binvent\b.{0,80}\b(?:admin|root|superuser|tool)\b",
+    r"\b(?:secret|hidden|root|admin|superuser)[_-]?[a-z0-9_]*\b",
+]
+_TOOL_CONTROL_ATTACK_RE = re.compile(
+    "|".join(f"(?:{pattern})" for pattern in _TOOL_CONTROL_ATTACK_PATTERNS),
+    re.IGNORECASE,
+)
+
 _ORDER_CONTEXT_RE = re.compile(
     r"\border(?:\s*(?:id|number|#))?\s*[:#-]?\s*(\d{3,})\b",
     re.IGNORECASE,
@@ -124,6 +136,10 @@ def _has_non_execution_intent(text: str) -> bool:
     return bool(_NON_EXECUTION_RE.search(text))
 
 
+def _has_tool_control_attack(text: str) -> bool:
+    return bool(_TOOL_CONTROL_ATTACK_RE.search(text))
+
+
 def _infer_tool(text: str) -> str | None:
     lowered = text.lower()
 
@@ -195,6 +211,35 @@ def _clarification_for(tool_name: str) -> str:
     return "Could you provide the required value?"
 
 
+def _canonical_grounded_request(tool_name: str, required_value: str) -> str:
+    if tool_name == "get_order":
+        return f"Check order {required_value}."
+    if tool_name == "cancel_order":
+        return f"Cancel order {required_value}."
+    if tool_name == "get_weather":
+        return f"Check the weather in {required_value}."
+    raise ValueError(f"Unsupported guarded tool: {tool_name}")
+
+
+def _replace_latest_user_text(body: dict[str, Any], content: str) -> dict[str, Any]:
+    messages = body.get("messages")
+    if not isinstance(messages, list):
+        return body
+
+    rewritten_messages = [dict(message) if isinstance(message, dict) else message for message in messages]
+    for index in range(len(rewritten_messages) - 1, -1, -1):
+        message = rewritten_messages[index]
+        if not isinstance(message, dict) or message.get("role") != "user":
+            continue
+        if isinstance(message.get("content"), str):
+            message["content"] = content
+            break
+
+    rewritten = dict(body)
+    rewritten["messages"] = rewritten_messages
+    return rewritten
+
+
 def apply_tool_policy(body: dict[str, Any]) -> ToolPolicyDecision:
     latest = latest_user_text(body)
     if not latest:
@@ -222,6 +267,16 @@ def apply_tool_policy(body: dict[str, Any]) -> ToolPolicyDecision:
             tool_name=tool_name,
             clarification=_clarification_for(tool_name),
             reason="missing_required_argument",
+        )
+
+    if _has_tool_control_attack(latest):
+        canonical = _canonical_grounded_request(tool_name, required_value)
+        rewritten = _replace_latest_user_text(body, canonical)
+        return ToolPolicyDecision(
+            action="pass",
+            body=rewritten,
+            tool_name=tool_name,
+            reason="grounded_tool_request_sanitized",
         )
 
     return ToolPolicyDecision(
