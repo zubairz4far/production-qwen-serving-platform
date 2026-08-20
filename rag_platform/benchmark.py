@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable, Mapping
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from statistics import mean
-from typing import Iterable, Mapping
 
 from .ingestion import canonical_source
 
