@@ -18,9 +18,13 @@ dev = [
   "pytest-cov==7.1.0",
   "ruff==0.16.3",
 ]
+rag = [
+  "qdrant-client==1.18.0",
+  "sentence-transformers==5.6.1",
+]
 
 [tool.setuptools.packages.find]
-include = ["gateway*"]
+include = ["gateway*", "rag_platform*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

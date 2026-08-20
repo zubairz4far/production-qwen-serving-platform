@@ -57,6 +57,13 @@ services:
     ports:
       - "8080:8080"
 
+  qdrant:
+    image: qdrant/qdrant:v1.18.3
+    ports:
+      - "127.0.0.1:6333:6333"
+    volumes:
+      - qdrant-storage:/qdrant/storage
+
   prometheus:
     image: prom/prometheus:v3.5.0
     command: ["--config.file=/etc/prometheus/prometheus.yml"]
@@ -69,3 +76,4 @@ services:
 
 volumes:
   hf-cache:
+  qdrant-storage:
