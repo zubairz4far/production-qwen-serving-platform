@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
-from typing import Protocol
+from typing import Any, Protocol
 
 from .types import Chunk, RetrievalHit
 
@@ -48,12 +48,13 @@ class QdrantDenseIndex:
         embedder: Embedder,
         collection_name: str = "rag_chunks",
         url: str = "http://localhost:6333",
+        client: Any | None = None,
     ) -> None:
         from qdrant_client import QdrantClient
 
         self.embedder = embedder
         self.collection_name = collection_name
-        self.client = QdrantClient(url=url)
+        self.client = client if client is not None else QdrantClient(url=url)
 
     @staticmethod
     def _point_id(chunk_id: str) -> str:
