@@ -21,7 +21,7 @@ class SentenceTransformerEmbedder:
         from sentence_transformers import SentenceTransformer
 
         self._model = SentenceTransformer(model_name)
-        dimension = self._model.get_sentence_embedding_dimension()
+        dimension = self._model.get_embedding_dimension()
         if dimension is None:
             raise RuntimeError("embedding model did not report a vector dimension")
         self._dimension = int(dimension)
