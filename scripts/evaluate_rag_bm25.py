@@ -39,6 +39,8 @@ def main() -> int:
         default=Path("evals/rag_retrieval_v1.jsonl"),
     )
     parser.add_argument("--k", type=int, default=5)
+    parser.add_argument("--min-top1", type=float, default=0.0)
+    parser.add_argument("--min-mrr", type=float, default=0.0)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
 
@@ -52,6 +54,17 @@ def main() -> int:
         output_path = args.root / args.output
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    failures = []
+    if result.metrics.top1_accuracy < args.min_top1:
+        failures.append(
+            f"top1_accuracy={result.metrics.top1_accuracy:.4f} < {args.min_top1:.4f}"
+        )
+    if result.metrics.mrr < args.min_mrr:
+        failures.append(f"mrr={result.metrics.mrr:.4f} < {args.min_mrr:.4f}")
+    if failures:
+        print("RAG regression floor failed: " + "; ".join(failures))
+        return 2
     return 0
 
 
