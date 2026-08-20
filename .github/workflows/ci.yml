@@ -25,7 +25,11 @@ jobs:
       - name: Tests
         run: pytest -q
       - name: RAG sparse retrieval benchmark
-        run: python -m scripts.evaluate_rag_bm25 --k 5
+        run: >-
+          python -m scripts.evaluate_rag_bm25
+          --k 5
+          --min-top1 0.85
+          --min-mrr 0.90
       - name: Validate tool-evaluation assets
         run: python -m scripts.validate_eval_assets
       - name: SLO evaluator regression
