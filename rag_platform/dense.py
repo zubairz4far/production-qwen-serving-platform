@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from collections.abc import Sequence
 from typing import Protocol
 
@@ -54,6 +55,10 @@ class QdrantDenseIndex:
         self.collection_name = collection_name
         self.client = QdrantClient(url=url)
 
+    @staticmethod
+    def _point_id(chunk_id: str) -> str:
+        return str(uuid.uuid5(uuid.NAMESPACE_URL, chunk_id))
+
     def ensure_collection(self) -> None:
         from qdrant_client import models
 
@@ -76,9 +81,10 @@ class QdrantDenseIndex:
         vectors = self.embedder.encode([chunk.text for chunk in chunks])
         points = [
             models.PointStruct(
-                id=chunk.chunk_id,
+                id=self._point_id(chunk.chunk_id),
                 vector=vector,
                 payload={
+                    "chunk_id": chunk.chunk_id,
                     "text": chunk.text,
                     "source": chunk.source,
                     "metadata": chunk.metadata,
@@ -106,7 +112,7 @@ class QdrantDenseIndex:
             hits.append(
                 RetrievalHit(
                     chunk=Chunk(
-                        chunk_id=str(point.id),
+                        chunk_id=str(payload.get("chunk_id", point.id)),
                         text=str(payload.get("text", "")),
                         source=str(payload.get("source", "unknown")),
                         metadata=dict(payload.get("metadata") or {}),
