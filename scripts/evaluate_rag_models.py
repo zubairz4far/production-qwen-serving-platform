@@ -37,13 +37,37 @@ def build_chunks(root: Path):
     return chunks
 
 
-def metrics_payload(result) -> dict:
+def diagnostics_payload(result, cases) -> dict:
+    top1_failures = []
+    misses_at_k = []
+    for case, ranking in zip(cases, result.rankings, strict=True):
+        relevant = set(case.relevant_sources)
+        row = {
+            "query": case.query,
+            "category": case.category,
+            "relevant_sources": sorted(relevant),
+            "retrieved_sources": ranking,
+        }
+        if not ranking or ranking[0] not in relevant:
+            top1_failures.append(row)
+        if not relevant.intersection(ranking):
+            misses_at_k.append(row)
     return {
-        "recall_at_k": result.metrics.recall_at_k,
-        "hit_rate_at_k": result.metrics.hit_rate_at_k,
-        "top1_accuracy": result.metrics.top1_accuracy,
-        "mrr": result.metrics.mrr,
-        "query_count": result.metrics.query_count,
+        "top1_failures": top1_failures,
+        "misses_at_k": misses_at_k,
+    }
+
+
+def result_payload(result, cases) -> dict:
+    return {
+        "metrics": {
+            "recall_at_k": result.metrics.recall_at_k,
+            "hit_rate_at_k": result.metrics.hit_rate_at_k,
+            "top1_accuracy": result.metrics.top1_accuracy,
+            "mrr": result.metrics.mrr,
+            "query_count": result.metrics.query_count,
+        },
+        "diagnostics": diagnostics_payload(result, cases),
     }
 
 
@@ -100,7 +124,7 @@ def main() -> int:
         "embedding_model": EMBEDDING_MODEL,
         "reranker_model": RERANKER_MODEL,
         "results": {
-            name: metrics_payload(result) for name, result in results.items()
+            name: result_payload(result, cases) for name, result in results.items()
         },
     }
     print(json.dumps(payload, indent=2, sort_keys=True))
