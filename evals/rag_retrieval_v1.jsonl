@@ -1,0 +1,40 @@
+{"query":"What throughput and p95 latency were measured at concurrency 8?","relevant_sources":["README.md"],"category":"serving-performance"}
+{"query":"Which concurrency points were tested in the live T4 sweep?","relevant_sources":["README.md"],"category":"serving-performance"}
+{"query":"What does the gateway return when the inference queue remains full?","relevant_sources":["README.md"],"category":"backpressure"}
+{"query":"How does readiness differ from liveness in this serving platform?","relevant_sources":["README.md"],"category":"operations"}
+{"query":"Which parser handles tool calls in the vLLM service?","relevant_sources":["README.md"],"category":"architecture"}
+{"query":"Why was a deterministic policy layer placed before the model?","relevant_sources":["README.md"],"category":"tool-policy"}
+{"query":"What happened when broader corrective SFT was tried?","relevant_sources":["README.md"],"category":"model-evaluation"}
+{"query":"How did the guarded system compare with the earlier model-only baseline?","relevant_sources":["README.md"],"category":"model-evaluation"}
+{"query":"Which checks are run in GPU-less deterministic CI?","relevant_sources":["README.md"],"category":"ci"}
+{"query":"What command runs the full measured GPU suite?","relevant_sources":["README.md"],"category":"serving-performance"}
+{"query":"What hardware and container capabilities are required to run the GPU benchmark?","relevant_sources":["docs/GPU_BENCHMARK.md"],"category":"benchmark-protocol"}
+{"query":"Which four artifacts does the GPU suite write?","relevant_sources":["docs/GPU_BENCHMARK.md"],"category":"benchmark-protocol"}
+{"query":"Why must runtime metadata be published with a performance result?","relevant_sources":["docs/GPU_BENCHMARK.md"],"category":"benchmark-protocol"}
+{"query":"Should results from different driver versions or GPUs be mixed in one performance row?","relevant_sources":["docs/GPU_BENCHMARK.md"],"category":"benchmark-protocol"}
+{"query":"Why are client TTFT and engine TTFT reported separately?","relevant_sources":["docs/GPU_BENCHMARK.md"],"category":"benchmark-protocol"}
+{"query":"What should be checked before selecting the fastest configuration?","relevant_sources":["docs/GPU_BENCHMARK.md"],"category":"benchmark-protocol"}
+{"query":"Where should raw GPU benchmark JSON be kept before review?","relevant_sources":["docs/GPU_BENCHMARK.md"],"category":"benchmark-protocol"}
+{"query":"Why does CI not automatically launch a Hugging Face GPU Job?","relevant_sources":["docs/GPU_BENCHMARK.md"],"category":"cost-control"}
+{"query":"Which accelerators are mentioned as available through Hugging Face Jobs?","relevant_sources":["docs/GPU_BENCHMARK.md"],"category":"hardware"}
+{"query":"What command sequence starts the services and verifies readiness before benchmarking?","relevant_sources":["docs/GPU_BENCHMARK.md"],"category":"benchmark-protocol"}
+{"query":"Which sparse retrieval method was implemented directly in the project?","relevant_sources":["docs/RAG_PHASE1.md"],"category":"rag-retrieval"}
+{"query":"Which vector database adapter was added for dense retrieval?","relevant_sources":["docs/RAG_PHASE1.md"],"category":"rag-retrieval"}
+{"query":"What fusion method combines sparse and dense rankings?","relevant_sources":["docs/RAG_PHASE1.md"],"category":"rag-retrieval"}
+{"query":"Which retrieval metrics are part of the frozen-query evaluation?","relevant_sources":["docs/RAG_PHASE1.md"],"category":"rag-evaluation"}
+{"query":"Why is retrieval logic kept explicit instead of hidden behind a framework?","relevant_sources":["docs/RAG_PHASE1.md"],"category":"rag-design"}
+{"query":"What document formats are planned for structure-aware ingestion?","relevant_sources":["docs/RAG_PHASE1.md"],"category":"rag-ingestion"}
+{"query":"How many frozen retrieval questions are planned for the next benchmark?","relevant_sources":["docs/RAG_PHASE1.md"],"category":"rag-evaluation"}
+{"query":"Which retrieval variants should be compared in the next milestone?","relevant_sources":["docs/RAG_PHASE1.md"],"category":"rag-evaluation"}
+{"query":"What kind of reranker is planned after hybrid retrieval?","relevant_sources":["docs/RAG_PHASE1.md"],"category":"rag-reranking"}
+{"query":"What answer-quality evaluation is planned alongside citation assembly?","relevant_sources":["docs/RAG_PHASE1.md"],"category":"rag-grounding"}
+{"query":"Which service is the only one publicly exposed by the default Compose security model?","relevant_sources":["SECURITY.md"],"category":"security"}
+{"query":"How are public caller keys separated from the vLLM credential?","relevant_sources":["SECURITY.md"],"category":"security"}
+{"query":"Which secrets must never be committed to the repository?","relevant_sources":["SECURITY.md"],"category":"secrets"}
+{"query":"Which port is published for the gateway and how is Prometheus exposed?","relevant_sources":["SECURITY.md"],"category":"network"}
+{"query":"What perimeter controls are recommended for an internet-facing deployment?","relevant_sources":["SECURITY.md"],"category":"network"}
+{"query":"Why is dynamic LoRA loading excluded from the trusted production path?","relevant_sources":["SECURITY.md"],"category":"model-security"}
+{"query":"Which three configuration values act as hard resource-exhaustion controls?","relevant_sources":["SECURITY.md"],"category":"resource-controls"}
+{"query":"What data should be excluded from a public vulnerability report?","relevant_sources":["SECURITY.md"],"category":"reporting"}
+{"query":"What should a vulnerability reproduction use instead of private customer data?","relevant_sources":["SECURITY.md"],"category":"reporting"}
+{"query":"Is vLLM mapped to a host port in the default deployment?","relevant_sources":["SECURITY.md"],"category":"network"}
