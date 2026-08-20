@@ -1,0 +1,40 @@
+name: RAG Model Evaluation
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "rag_platform/**"
+      - "scripts/evaluate_rag_models.py"
+      - "evals/rag_retrieval_v1.jsonl"
+      - "README.md"
+      - "SECURITY.md"
+      - "docs/GPU_BENCHMARK.md"
+      - "docs/RAG_PHASE1.md"
+      - ".github/workflows/rag-model-eval.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  measured-retrieval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      TOKENIZERS_PARALLELISM: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install RAG model dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[rag]"
+      - name: Measure frozen retrieval ladder
+        run: >-
+          python -m scripts.evaluate_rag_models
+          --k 5
+          --rerank-candidates 20
