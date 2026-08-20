@@ -50,11 +50,14 @@ class QdrantDenseIndex:
         url: str = "http://localhost:6333",
         client: Any | None = None,
     ) -> None:
-        from qdrant_client import QdrantClient
-
         self.embedder = embedder
         self.collection_name = collection_name
-        self.client = client if client is not None else QdrantClient(url=url)
+        if client is not None:
+            self.client = client
+        else:
+            from qdrant_client import QdrantClient
+
+            self.client = QdrantClient(url=url)
 
     @staticmethod
     def _point_id(chunk_id: str) -> str:
