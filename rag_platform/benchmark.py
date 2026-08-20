@@ -20,6 +20,7 @@ class BenchmarkCase:
 class BenchmarkMetrics:
     recall_at_k: float
     hit_rate_at_k: float
+    top1_accuracy: float
     mrr: float
     query_count: int
 
@@ -70,6 +71,7 @@ def run_benchmark(
     case_list = list(cases)
     recalls: list[float] = []
     hits: list[float] = []
+    top1: list[float] = []
     reciprocal_ranks: list[float] = []
     rankings: list[list[str]] = []
 
@@ -85,6 +87,11 @@ def run_benchmark(
         matched = case.relevant_sources.intersection(unique_top)
         recalls.append(len(matched) / len(case.relevant_sources))
         hits.append(1.0 if matched else 0.0)
+        top1.append(
+            1.0
+            if source_ranking and source_ranking[0] in case.relevant_sources
+            else 0.0
+        )
         first_rank = next(
             (
                 rank
@@ -98,6 +105,7 @@ def run_benchmark(
     metrics = BenchmarkMetrics(
         recall_at_k=mean(recalls) if recalls else 0.0,
         hit_rate_at_k=mean(hits) if hits else 0.0,
+        top1_accuracy=mean(top1) if top1 else 0.0,
         mrr=mean(reciprocal_ranks) if reciprocal_ranks else 0.0,
         query_count=len(case_list),
     )
