@@ -8,6 +8,7 @@ from rag_platform.fusion import (
     reciprocal_rank_fusion,
     source_aware_reciprocal_rank_fusion,
 )
+from rag_platform.hybrid import SourceAwareHybridRetriever
 from rag_platform.types import Chunk, RetrievalHit
 
 
@@ -117,28 +118,41 @@ def test_source_aware_rrf_preserves_top_signal_and_adds_source_coverage() -> Non
     }
 
 
-def test_source_aware_rrf_scans_beyond_dominant_top_twenty() -> None:
-    readme_chunks = [Chunk(f"r{i}", f"R{i}", "README.md") for i in range(25)]
+class _RecordingRetriever:
+    def __init__(self, hits: list[RetrievalHit]) -> None:
+        self.hits = hits
+        self.last_limit = 0
+
+    def search(self, query: str, *, limit: int = 10) -> list[RetrievalHit]:
+        self.last_limit = limit
+        return self.hits[:limit]
+
+
+def test_source_aware_hybrid_uses_configured_deep_candidate_pool() -> None:
+    readme_chunks = [Chunk(f"r{i}", f"R{i}", "README.md") for i in range(45)]
     gpu = Chunk("gpu", "GPU", "docs/GPU_BENCHMARK.md")
-    sparse = [
+    sparse_hits = [
         RetrievalHit(chunk, 100.0 - rank, rank, "bm25")
         for rank, chunk in enumerate(readme_chunks, start=1)
-    ] + [RetrievalHit(gpu, 1.0, 26, "bm25")]
-    dense = [
+    ] + [RetrievalHit(gpu, 1.0, 46, "bm25")]
+    dense_hits = [
         RetrievalHit(chunk, 1.0 - rank / 100.0, rank, "dense")
         for rank, chunk in enumerate(readme_chunks, start=1)
-    ] + [RetrievalHit(gpu, 0.1, 26, "dense")]
-
-    fused = source_aware_reciprocal_rank_fusion(
-        [sparse, dense],
-        rank_constant=60,
-        limit=5,
+    ] + [RetrievalHit(gpu, 0.1, 46, "dense")]
+    sparse = _RecordingRetriever(sparse_hits)
+    dense = _RecordingRetriever(dense_hits)
+    retriever = SourceAwareHybridRetriever(
+        sparse=sparse,
+        dense=dense,
         max_per_source=2,
+        candidate_limit=60,
     )
 
-    assert fused[0].chunk.source == "README.md"
-    assert "docs/GPU_BENCHMARK.md" in [hit.chunk.source for hit in fused]
-    assert [hit.chunk.source for hit in fused].count("README.md") == 4
+    hits = retriever.search("gpu benchmark", limit=5)
+
+    assert sparse.last_limit == 60
+    assert dense.last_limit == 60
+    assert "docs/GPU_BENCHMARK.md" in [hit.chunk.source for hit in hits]
 
 
 def test_retrieval_metrics() -> None:
