@@ -93,20 +93,30 @@ def source_aware_reciprocal_rank_fusion(
     rank_constant: int = 60,
     limit: int = 10,
     max_per_source: int = 2,
-    candidate_multiplier: int = 4,
 ) -> list[RetrievalHit]:
-    """Run normal RRF, then diversify the bounded candidate ranking by source."""
+    """Run RRF over the full bounded input pool, then diversify by source.
 
-    if candidate_multiplier <= 0:
-        raise ValueError("candidate_multiplier must be positive")
+    Each upstream retriever already bounds its candidate list. Source-aware fusion
+    must therefore inspect the whole union rather than truncating RRF before the
+    diversity pass; otherwise a dominant source can occupy the entire intermediate
+    pool and hide relevant chunks from less frequent sources.
+    """
+
     if limit <= 0:
         return []
 
-    candidate_limit = max(limit, limit * candidate_multiplier)
+    unique_candidate_ids = {
+        hit.chunk.chunk_id
+        for hits in ranked_lists
+        for hit in hits
+    }
+    if not unique_candidate_ids:
+        return []
+
     fused = reciprocal_rank_fusion(
         ranked_lists,
         rank_constant=rank_constant,
-        limit=candidate_limit,
+        limit=len(unique_candidate_ids),
     )
     return diversify_by_source(
         fused,
