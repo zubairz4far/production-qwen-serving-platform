@@ -3,7 +3,11 @@ import pytest
 from rag_platform.bm25 import BM25Index
 from rag_platform.chunking import chunk_text
 from rag_platform.evaluation import evaluate_retrieval
-from rag_platform.fusion import reciprocal_rank_fusion
+from rag_platform.fusion import (
+    diversify_by_source,
+    reciprocal_rank_fusion,
+    source_aware_reciprocal_rank_fusion,
+)
 from rag_platform.types import Chunk, RetrievalHit
 
 
@@ -47,6 +51,70 @@ def test_rrf_rewards_items_present_in_multiple_channels() -> None:
 
     assert fused[0].chunk.chunk_id == "a"
     assert fused[0].channel == "rrf"
+
+
+def test_source_diversity_caps_repeated_sources_before_backfill() -> None:
+    hits = [
+        RetrievalHit(Chunk("a1", "A1", "README.md"), 1.0, 1, "rerank"),
+        RetrievalHit(Chunk("a2", "A2", "README.md"), 0.9, 2, "rerank"),
+        RetrievalHit(Chunk("a3", "A3", "README.md"), 0.8, 3, "rerank"),
+        RetrievalHit(Chunk("b1", "B1", "SECURITY.md"), 0.7, 4, "rerank"),
+        RetrievalHit(Chunk("c1", "C1", "docs/GPU_BENCHMARK.md"), 0.6, 5, "rerank"),
+    ]
+
+    diversified = diversify_by_source(hits, limit=4, max_per_source=2)
+
+    assert [hit.chunk.chunk_id for hit in diversified] == ["a1", "a2", "b1", "c1"]
+    assert all("source_diverse" in hit.channel for hit in diversified)
+
+
+def test_source_diversity_backfills_when_corpus_has_too_few_sources() -> None:
+    hits = [
+        RetrievalHit(Chunk("a1", "A1", "README.md"), 1.0, 1, "rrf"),
+        RetrievalHit(Chunk("a2", "A2", "README.md"), 0.9, 2, "rrf"),
+        RetrievalHit(Chunk("a3", "A3", "README.md"), 0.8, 3, "rrf"),
+    ]
+
+    diversified = diversify_by_source(hits, limit=3, max_per_source=1)
+
+    assert [hit.chunk.chunk_id for hit in diversified] == ["a1", "a2", "a3"]
+
+
+def test_source_aware_rrf_preserves_top_signal_and_adds_source_coverage() -> None:
+    readme_1 = Chunk("r1", "R1", "README.md")
+    readme_2 = Chunk("r2", "R2", "README.md")
+    readme_3 = Chunk("r3", "R3", "README.md")
+    security = Chunk("s1", "S1", "SECURITY.md")
+    gpu = Chunk("g1", "G1", "docs/GPU_BENCHMARK.md")
+    sparse = [
+        RetrievalHit(readme_1, 10.0, 1, "bm25"),
+        RetrievalHit(readme_2, 9.0, 2, "bm25"),
+        RetrievalHit(readme_3, 8.0, 3, "bm25"),
+        RetrievalHit(security, 7.0, 4, "bm25"),
+        RetrievalHit(gpu, 6.0, 5, "bm25"),
+    ]
+    dense = [
+        RetrievalHit(readme_1, 0.9, 1, "dense"),
+        RetrievalHit(readme_2, 0.8, 2, "dense"),
+        RetrievalHit(readme_3, 0.7, 3, "dense"),
+        RetrievalHit(gpu, 0.6, 4, "dense"),
+        RetrievalHit(security, 0.5, 5, "dense"),
+    ]
+
+    fused = source_aware_reciprocal_rank_fusion(
+        [sparse, dense],
+        rank_constant=10,
+        limit=4,
+        max_per_source=2,
+    )
+
+    assert fused[0].chunk.chunk_id == "r1"
+    assert [hit.chunk.source for hit in fused].count("README.md") == 2
+    assert {hit.chunk.source for hit in fused} == {
+        "README.md",
+        "SECURITY.md",
+        "docs/GPU_BENCHMARK.md",
+    }
 
 
 def test_retrieval_metrics() -> None:
