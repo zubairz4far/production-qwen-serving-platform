@@ -1,0 +1,16 @@
+{"query":"What maximum model length was used for the reviewed live T4 baseline?","relevant_sources":["README.md"],"category":"serving-config"}
+{"query":"What GPU memory utilization setting was used in the reviewed T4 serving run?","relevant_sources":["README.md"],"category":"serving-config"}
+{"query":"What maximum sequence count was configured for the live T4 baseline?","relevant_sources":["README.md"],"category":"serving-config"}
+{"query":"What happens to recognized fake-tool injection text inside an otherwise grounded request?","relevant_sources":["README.md"],"category":"tool-policy"}
+{"query":"What should be done immediately when a repository secret is exposed?","relevant_sources":["SECURITY.md"],"category":"secrets"}
+{"query":"Where is Prometheus bound in the default network configuration?","relevant_sources":["SECURITY.md"],"category":"network"}
+{"query":"Can caller credentials be forwarded upstream when request IDs are propagated?","relevant_sources":["SECURITY.md"],"category":"security"}
+{"query":"What kind of data should be used for a minimal public security reproduction?","relevant_sources":["SECURITY.md"],"category":"reporting"}
+{"query":"How many requests per concurrency point are used in the documented GPU suite command?","relevant_sources":["docs/GPU_BENCHMARK.md"],"category":"benchmark-protocol"}
+{"query":"What local gateway URL is used by the documented GPU suite command?","relevant_sources":["docs/GPU_BENCHMARK.md"],"category":"benchmark-protocol"}
+{"query":"What access may be required in addition to the GPU host before loading the model and adapter?","relevant_sources":["docs/GPU_BENCHMARK.md"],"category":"benchmark-protocol"}
+{"query":"Are Hugging Face GPU Jobs treated as free CI capacity or deliberate paid compute?","relevant_sources":["docs/GPU_BENCHMARK.md"],"category":"cost-control"}
+{"query":"What property makes chunk identities reproducible across repeated RAG ingestion runs?","relevant_sources":["docs/RAG_PHASE1.md"],"category":"rag-chunking"}
+{"query":"Which embedding adapter accompanies the Qdrant dense vector adapter?","relevant_sources":["docs/RAG_PHASE1.md"],"category":"rag-retrieval"}
+{"query":"What parts of the RAG path already have unit-test coverage in Phase 1?","relevant_sources":["docs/RAG_PHASE1.md"],"category":"rag-testing"}
+{"query":"What design choice makes ranking failures observable and sparse/dense/hybrid comparison possible?","relevant_sources":["docs/RAG_PHASE1.md"],"category":"rag-design"}
