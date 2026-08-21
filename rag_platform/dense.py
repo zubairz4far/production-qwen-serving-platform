@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
-from typing import Protocol
+from typing import Any, Protocol
 
 from .types import Chunk, RetrievalHit
 
@@ -21,7 +21,7 @@ class SentenceTransformerEmbedder:
         from sentence_transformers import SentenceTransformer
 
         self._model = SentenceTransformer(model_name)
-        dimension = self._model.get_sentence_embedding_dimension()
+        dimension = self._model.get_embedding_dimension()
         if dimension is None:
             raise RuntimeError("embedding model did not report a vector dimension")
         self._dimension = int(dimension)
@@ -48,12 +48,16 @@ class QdrantDenseIndex:
         embedder: Embedder,
         collection_name: str = "rag_chunks",
         url: str = "http://localhost:6333",
+        client: Any | None = None,
     ) -> None:
-        from qdrant_client import QdrantClient
-
         self.embedder = embedder
         self.collection_name = collection_name
-        self.client = QdrantClient(url=url)
+        if client is not None:
+            self.client = client
+        else:
+            from qdrant_client import QdrantClient
+
+            self.client = QdrantClient(url=url)
 
     @staticmethod
     def _point_id(chunk_id: str) -> str:
