@@ -8,6 +8,7 @@ on:
       - "scripts/evaluate_rag_models.py"
       - "evals/rag_retrieval_v1.jsonl"
       - "evals/rag_retrieval_dev_phase4.jsonl"
+      - "evals/rag_retrieval_locked_phase4.jsonl"
       - "README.md"
       - "SECURITY.md"
       - "docs/GPU_BENCHMARK.md"
@@ -54,3 +55,11 @@ jobs:
           --rerank-candidates 20
           --max-per-source 2
           --source-candidate-limits 30 60
+      - name: Run locked Phase 4 promotion benchmark
+        run: >-
+          python -m scripts.evaluate_rag_models
+          --cases evals/rag_retrieval_locked_phase4.jsonl
+          --k 5
+          --rerank-candidates 20
+          --max-per-source 2
+          --source-candidate-limits 30
