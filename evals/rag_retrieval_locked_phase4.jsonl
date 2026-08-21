@@ -1,0 +1,24 @@
+{"query":"Which LoRA rank and vLLM version define the reviewed live T4 baseline?","relevant_sources":["README.md"],"category":"serving-config"}
+{"query":"What does the documented concurrency-8 result explicitly avoid claiming about the T4 hardware?","relevant_sources":["README.md"],"category":"serving-performance"}
+{"query":"Which three tool names define the deterministic policy's current production family?","relevant_sources":["README.md"],"category":"tool-policy"}
+{"query":"What additional coordination is needed for global admission control across multiple gateway replicas?","relevant_sources":["README.md"],"category":"scaling"}
+{"query":"Which API path family requires public bearer-key authentication?","relevant_sources":["SECURITY.md"],"category":"security"}
+{"query":"What model-selection restriction does the gateway enforce at the security boundary?","relevant_sources":["SECURITY.md"],"category":"model-security"}
+{"query":"What cardinality property is required for Prometheus labels in the security model?","relevant_sources":["SECURITY.md"],"category":"observability-security"}
+{"query":"How can request IDs be propagated without exposing caller credentials to the upstream model service?","relevant_sources":["SECURITY.md"],"category":"security"}
+{"query":"What model alias is passed to the documented full GPU-suite command?","relevant_sources":["docs/GPU_BENCHMARK.md"],"category":"benchmark-protocol"}
+{"query":"Under which directory does the GPU suite place its four generated artifacts?","relevant_sources":["docs/GPU_BENCHMARK.md"],"category":"benchmark-artifacts"}
+{"query":"Which GPU-suite artifact records the Git commit, GPU UUID, driver, VRAM, and vLLM image identity?","relevant_sources":["docs/GPU_BENCHMARK.md"],"category":"benchmark-artifacts"}
+{"query":"Which GPU-suite artifact contains the compact portfolio summary and best SLO-passing point?","relevant_sources":["docs/GPU_BENCHMARK.md"],"category":"benchmark-artifacts"}
+{"query":"Which three retrieval modes does Phase 1 make independently comparable?","relevant_sources":["docs/RAG_PHASE1.md"],"category":"rag-design"}
+{"query":"Which frozen-query metric is listed alongside Recall@K and MRR?","relevant_sources":["docs/RAG_PHASE1.md"],"category":"rag-evaluation"}
+{"query":"What two chunking properties were established in the initial RAG retrieval foundation?","relevant_sources":["docs/RAG_PHASE1.md"],"category":"rag-chunking"}
+{"query":"What is the stated purpose of keeping retrieval policy and evaluation logic explicit?","relevant_sources":["docs/RAG_PHASE1.md"],"category":"rag-design"}
+{"query":"Which documents together distinguish deterministic CI evidence from hardware-dependent GPU serving measurements?","relevant_sources":["README.md","docs/GPU_BENCHMARK.md"],"category":"cross-source-evidence"}
+{"query":"Which documents together describe the public-only gateway boundary and the internal vLLM service?","relevant_sources":["README.md","SECURITY.md"],"category":"cross-source-security"}
+{"query":"Which documents together cover retrieval-quality metrics and served tool-call correctness metrics?","relevant_sources":["README.md","docs/RAG_PHASE1.md"],"category":"cross-source-evaluation"}
+{"query":"Which documents together identify the statically loaded LoRA adapter and prohibit dynamic runtime adapter loading in the trusted path?","relevant_sources":["README.md","SECURITY.md"],"category":"cross-source-model-security"}
+{"query":"Which documents together say correctness must be checked before throughput is selected and explain the deterministic tool-policy guard?","relevant_sources":["README.md","docs/GPU_BENCHMARK.md"],"category":"cross-source-correctness"}
+{"query":"Which documents together describe dense retrieval through Qdrant and the production ban on dynamic LoRA loading?","relevant_sources":["SECURITY.md","docs/RAG_PHASE1.md"],"category":"cross-source-architecture"}
+{"query":"Which documents together describe future grounded-answer evaluation and current rules for safe vulnerability reproductions?","relevant_sources":["SECURITY.md","docs/RAG_PHASE1.md"],"category":"cross-source-governance"}
+{"query":"Which documents together specify a readiness check for the serving stack and the GPU host requirements needed before running measured benchmarks?","relevant_sources":["README.md","docs/GPU_BENCHMARK.md"],"category":"cross-source-operations"}
