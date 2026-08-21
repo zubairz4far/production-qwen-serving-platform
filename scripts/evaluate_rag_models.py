@@ -41,8 +41,14 @@ def build_chunks(root: Path):
 def diagnostics_payload(result, cases) -> dict:
     top1_failures = []
     misses_at_k = []
+    unique_source_counts = []
+    collapsed_rankings = 0
     for case, ranking in zip(cases, result.rankings, strict=True):
         relevant = set(case.relevant_sources)
+        unique_source_count = len(set(ranking))
+        unique_source_counts.append(unique_source_count)
+        if ranking and unique_source_count == 1:
+            collapsed_rankings += 1
         row = {
             "query": case.query,
             "category": case.category,
@@ -53,9 +59,15 @@ def diagnostics_payload(result, cases) -> dict:
             top1_failures.append(row)
         if not relevant.intersection(ranking):
             misses_at_k.append(row)
+
+    query_count = len(cases)
     return {
         "top1_failures": top1_failures,
         "misses_at_k": misses_at_k,
+        "mean_unique_sources_at_k": (
+            sum(unique_source_counts) / query_count if query_count else 0.0
+        ),
+        "source_collapse_rate": collapsed_rankings / query_count if query_count else 0.0,
     }
 
 
