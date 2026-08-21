@@ -69,6 +69,45 @@ def test_source_diversity_caps_repeated_sources_before_backfill() -> None:
     assert all("source_diverse" in hit.channel for hit in diversified)
 
 
+def test_source_diversity_groups_heading_locators_by_document() -> None:
+    hits = [
+        RetrievalHit(
+            Chunk("r1", "R1", "README.md#heading=Serving"),
+            1.0,
+            1,
+            "rrf",
+        ),
+        RetrievalHit(
+            Chunk("r2", "R2", "README.md#heading=Benchmarks"),
+            0.9,
+            2,
+            "rrf",
+        ),
+        RetrievalHit(
+            Chunk("r3", "R3", "README.md#heading=Security"),
+            0.8,
+            3,
+            "rrf",
+        ),
+        RetrievalHit(
+            Chunk("g1", "G1", "docs/GPU_BENCHMARK.md#heading=Protocol"),
+            0.7,
+            4,
+            "rrf",
+        ),
+        RetrievalHit(
+            Chunk("s1", "S1", "SECURITY.md#heading=Network"),
+            0.6,
+            5,
+            "rrf",
+        ),
+    ]
+
+    diversified = diversify_by_source(hits, limit=4, max_per_source=2)
+
+    assert [hit.chunk.chunk_id for hit in diversified] == ["r1", "r2", "g1", "s1"]
+
+
 def test_source_diversity_backfills_when_corpus_has_too_few_sources() -> None:
     hits = [
         RetrievalHit(Chunk("a1", "A1", "README.md"), 1.0, 1, "rrf"),
