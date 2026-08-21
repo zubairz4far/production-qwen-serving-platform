@@ -117,6 +117,30 @@ def test_source_aware_rrf_preserves_top_signal_and_adds_source_coverage() -> Non
     }
 
 
+def test_source_aware_rrf_scans_beyond_dominant_top_twenty() -> None:
+    readme_chunks = [Chunk(f"r{i}", f"R{i}", "README.md") for i in range(25)]
+    gpu = Chunk("gpu", "GPU", "docs/GPU_BENCHMARK.md")
+    sparse = [
+        RetrievalHit(chunk, 100.0 - rank, rank, "bm25")
+        for rank, chunk in enumerate(readme_chunks, start=1)
+    ] + [RetrievalHit(gpu, 1.0, 26, "bm25")]
+    dense = [
+        RetrievalHit(chunk, 1.0 - rank / 100.0, rank, "dense")
+        for rank, chunk in enumerate(readme_chunks, start=1)
+    ] + [RetrievalHit(gpu, 0.1, 26, "dense")]
+
+    fused = source_aware_reciprocal_rank_fusion(
+        [sparse, dense],
+        rank_constant=60,
+        limit=5,
+        max_per_source=2,
+    )
+
+    assert fused[0].chunk.source == "README.md"
+    assert "docs/GPU_BENCHMARK.md" in [hit.chunk.source for hit in fused]
+    assert [hit.chunk.source for hit in fused].count("README.md") == 4
+
+
 def test_retrieval_metrics() -> None:
     metrics = evaluate_retrieval(
         expected=[{"a"}, {"c", "d"}],
