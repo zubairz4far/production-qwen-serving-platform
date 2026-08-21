@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Sequence
 
 from .types import RetrievalHit
 
@@ -37,3 +38,78 @@ def reciprocal_rank_fusion(
         )
         for rank, chunk_id in enumerate(ordered, start=1)
     ]
+
+
+def diversify_by_source(
+    hits: Sequence[RetrievalHit],
+    *,
+    limit: int = 10,
+    max_per_source: int = 2,
+) -> list[RetrievalHit]:
+    """Prefer source diversity while preserving the upstream ranking order.
+
+    The first pass admits at most ``max_per_source`` chunks from one source. If the
+    corpus does not contain enough distinct sources to fill ``limit``, deferred hits
+    are appended in their original order. This avoids turning diversity into a hard
+    recall loss on small or single-source corpora.
+    """
+
+    if limit <= 0:
+        return []
+    if max_per_source <= 0:
+        raise ValueError("max_per_source must be positive")
+
+    selected: list[RetrievalHit] = []
+    deferred: list[RetrievalHit] = []
+    counts: dict[str, int] = defaultdict(int)
+
+    for hit in hits:
+        source = hit.chunk.source
+        if counts[source] < max_per_source:
+            selected.append(hit)
+            counts[source] += 1
+        else:
+            deferred.append(hit)
+        if len(selected) == limit:
+            break
+
+    if len(selected) < limit:
+        selected.extend(deferred[: limit - len(selected)])
+
+    return [
+        RetrievalHit(
+            chunk=hit.chunk,
+            score=hit.score,
+            rank=rank,
+            channel=f"{hit.channel}+source_diverse",
+        )
+        for rank, hit in enumerate(selected[:limit], start=1)
+    ]
+
+
+def source_aware_reciprocal_rank_fusion(
+    ranked_lists: list[list[RetrievalHit]],
+    *,
+    rank_constant: int = 60,
+    limit: int = 10,
+    max_per_source: int = 2,
+    candidate_multiplier: int = 4,
+) -> list[RetrievalHit]:
+    """Run normal RRF, then diversify the bounded candidate ranking by source."""
+
+    if candidate_multiplier <= 0:
+        raise ValueError("candidate_multiplier must be positive")
+    if limit <= 0:
+        return []
+
+    candidate_limit = max(limit, limit * candidate_multiplier)
+    fused = reciprocal_rank_fusion(
+        ranked_lists,
+        rank_constant=rank_constant,
+        limit=candidate_limit,
+    )
+    return diversify_by_source(
+        fused,
+        limit=limit,
+        max_per_source=max_per_source,
+    )
