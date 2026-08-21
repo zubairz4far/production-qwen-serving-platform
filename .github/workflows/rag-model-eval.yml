@@ -7,6 +7,8 @@ on:
       - "rag_platform/**"
       - "scripts/evaluate_rag_models.py"
       - "evals/rag_retrieval_v1.jsonl"
+      - "evals/rag_retrieval_dev_phase4.jsonl"
+      - "evals/rag_retrieval_locked_phase4.jsonl"
       - "README.md"
       - "SECURITY.md"
       - "docs/GPU_BENCHMARK.md"
@@ -37,8 +39,27 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[rag]"
-      - name: Measure frozen retrieval ladder
+      - name: Recheck observed frozen v1 benchmark
         run: >-
           python -m scripts.evaluate_rag_models
+          --cases evals/rag_retrieval_v1.jsonl
           --k 5
           --rerank-candidates 20
+          --max-per-source 2
+          --source-candidate-limits 30 60
+      - name: Measure Phase 4 development candidates
+        run: >-
+          python -m scripts.evaluate_rag_models
+          --cases evals/rag_retrieval_dev_phase4.jsonl
+          --k 5
+          --rerank-candidates 20
+          --max-per-source 2
+          --source-candidate-limits 30 60
+      - name: Run locked Phase 4 promotion benchmark
+        run: >-
+          python -m scripts.evaluate_rag_models
+          --cases evals/rag_retrieval_locked_phase4.jsonl
+          --k 5
+          --rerank-candidates 20
+          --max-per-source 2
+          --source-candidate-limits 30
