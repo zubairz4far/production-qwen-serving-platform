@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Sequence
 
+from .ingestion import canonical_source
 from .types import RetrievalHit
 
 
@@ -46,12 +47,16 @@ def diversify_by_source(
     limit: int = 10,
     max_per_source: int = 2,
 ) -> list[RetrievalHit]:
-    """Prefer source diversity while preserving the upstream ranking order.
+    """Prefer document diversity while preserving the upstream ranking order.
 
-    The first pass admits at most ``max_per_source`` chunks from one source. If the
-    corpus does not contain enough distinct sources to fill ``limit``, deferred hits
-    are appended in their original order. This avoids turning diversity into a hard
-    recall loss on small or single-source corpora.
+    Structural ingestion stores locators such as ``#heading=...`` or ``#page=...``
+    in ``Chunk.source``. Diversity is intentionally enforced at the canonical
+    document level, matching source-level benchmark semantics.
+
+    The first pass admits at most ``max_per_source`` chunks from one canonical
+    source. If the corpus does not contain enough distinct sources to fill
+    ``limit``, deferred hits are appended in their original order so diversity
+    never becomes a hard recall loss on small or single-source corpora.
     """
 
     if limit <= 0:
@@ -64,7 +69,7 @@ def diversify_by_source(
     counts: dict[str, int] = defaultdict(int)
 
     for hit in hits:
-        source = hit.chunk.source
+        source = canonical_source(hit.chunk.source)
         if counts[source] < max_per_source:
             selected.append(hit)
             counts[source] += 1
@@ -97,9 +102,9 @@ def source_aware_reciprocal_rank_fusion(
     """Run RRF over the full bounded input pool, then diversify by source.
 
     Each upstream retriever already bounds its candidate list. Source-aware fusion
-    must therefore inspect the whole union rather than truncating RRF before the
-    diversity pass; otherwise a dominant source can occupy the entire intermediate
-    pool and hide relevant chunks from less frequent sources.
+    must inspect the whole union rather than truncating RRF before the diversity
+    pass; otherwise a dominant source can occupy the entire intermediate pool and
+    hide relevant chunks from less frequent sources.
     """
 
     if limit <= 0:
