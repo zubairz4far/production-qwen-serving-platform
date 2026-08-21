@@ -97,8 +97,18 @@ def main() -> int:
     parser.add_argument("--k", type=int, default=5)
     parser.add_argument("--rerank-candidates", type=int, default=20)
     parser.add_argument("--max-per-source", type=int, default=2)
+    parser.add_argument(
+        "--source-candidate-limits",
+        type=int,
+        nargs="+",
+        default=[30, 60],
+        help="Candidate depths to compare for source-aware first-stage retrieval.",
+    )
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
+
+    if any(depth <= 0 for depth in args.source_candidate_limits):
+        parser.error("source candidate limits must be positive")
 
     chunks = build_chunks(args.root)
     cases = load_cases(args.root / args.cases)
@@ -113,27 +123,11 @@ def main() -> int:
     dense.upsert(chunks)
 
     hybrid = HybridRetriever(sparse=sparse, dense=dense)
-    source_aware_hybrid = SourceAwareHybridRetriever(
-        sparse=sparse,
-        dense=dense,
-        max_per_source=args.max_per_source,
-    )
-
     reranker = Reranker(CrossEncoderScorer(RERANKER_MODEL))
     reranked = RerankingRetriever(
         retriever=hybrid,
         reranker=reranker,
         candidate_limit=args.rerank_candidates,
-    )
-    source_aware_reranked_raw = RerankingRetriever(
-        retriever=source_aware_hybrid,
-        reranker=reranker,
-        candidate_limit=args.rerank_candidates,
-    )
-    source_aware_reranked = SourceDiversityRetriever(
-        retriever=source_aware_reranked_raw,
-        candidate_limit=args.rerank_candidates,
-        max_per_source=args.max_per_source,
     )
 
     retrievers = {
@@ -141,9 +135,27 @@ def main() -> int:
         "dense": dense,
         "hybrid": hybrid,
         "hybrid_rerank": reranked,
-        "source_aware_hybrid": source_aware_hybrid,
-        "source_aware_hybrid_rerank": source_aware_reranked,
     }
+    for depth in args.source_candidate_limits:
+        source_aware_hybrid = SourceAwareHybridRetriever(
+            sparse=sparse,
+            dense=dense,
+            max_per_source=args.max_per_source,
+            candidate_limit=depth,
+        )
+        source_aware_reranked_raw = RerankingRetriever(
+            retriever=source_aware_hybrid,
+            reranker=reranker,
+            candidate_limit=args.rerank_candidates,
+        )
+        source_aware_reranked = SourceDiversityRetriever(
+            retriever=source_aware_reranked_raw,
+            candidate_limit=args.rerank_candidates,
+            max_per_source=args.max_per_source,
+        )
+        retrievers[f"source_aware_hybrid_d{depth}"] = source_aware_hybrid
+        retrievers[f"source_aware_hybrid_rerank_d{depth}"] = source_aware_reranked
+
     results = {
         name: run_benchmark(name, retriever, cases, k=args.k)
         for name, retriever in retrievers.items()
@@ -154,6 +166,7 @@ def main() -> int:
         "k": args.k,
         "rerank_candidates": args.rerank_candidates,
         "max_per_source": args.max_per_source,
+        "source_candidate_limits": args.source_candidate_limits,
         "chunk_size_words": 180,
         "overlap_words": 30,
         "embedding_model": EMBEDDING_MODEL,
